@@ -1,0 +1,143 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Ruta del archivo local
+ruta_archivo = "./calidadvino.csv"
+
+# Cargar el dataset desde la ruta local
+data = pd.read_csv(ruta_archivo, encoding='latin1', delimiter=',')
+
+print(data.head())
+data.info()
+
+# Seleccionar las columnas numéricas que serán usadas para PCA
+features = ['Tartaric Acid','Grape Density','Citric Acid','Residual.sugar','Sodium chloride','Free.sulfur.dioxide',
+            'Bound.sulfur.dioxide','Alcohol Density','PH Levels','Potassium chloride','Alcohol Content']
+x = data[features].values
+
+# Estandarizar los datos
+scaler = StandardScaler()
+x_scaled = scaler.fit_transform(x)
+
+num_com = 6  # Cambia este valor según el número de elementos que desees
+pca_list = ['PCA' + str(i) for i in range(1, num_com + 1)]
+
+# Inicializar PCA con el número de componentes deseado (por ejemplo, 4 componentes principales)
+pca = PCA(n_components=num_com)
+
+# Ajustar PCA a los datos escalados
+principal_components = pca.fit_transform(x_scaled)
+
+# Crear un DataFrame con los componentes principales
+pca_df = pd.DataFrame(data=principal_components, columns=pca_list)
+
+# Mostrar las primeras filas del nuevo DataFrame
+print(pca_df.head())
+
+# Crear el DataFrame con las contribuciones de cada variable a los componentes principales
+pca_contrib_df = pd.DataFrame(
+    data    = pca.components_,
+    columns = features,       # Las 11 columnas originales
+    index   = pca_list
+)
+
+# Crear un heatmap con los datos de la matriz de componentes
+plt.figure(figsize=(10, 6))  # Ajustar el tamaño de la figura
+sns.heatmap(
+    data       = pca_contrib_df,      # Datos de las contribuciones
+    annot      = True,                # Mostrar los valores en cada celda
+    cmap       = 'RdBu',              # Color de la escala, rojo (alto positivo) a azul (alto negativo)
+    center     = 0,                   # Centramos la escala en 0
+    linewidths = 0.5                  # Añadir líneas entre celdas
+)
+
+plt.title('Contribuciones de las variables a cada componente principal')
+plt.xlabel('Variables')
+plt.ylabel('Componentes principales')
+plt.show()
+
+# Visualizar todas las combinaciones de los componentes principales en un gráfico de pares
+sns.pairplot(pca_df)
+plt.suptitle('Gráfica de pares de los Componentes Principales', y=1)
+plt.show()
+
+# Porcentaje de varianza explicada por cada componente
+print('----------------------------------------------------')
+print('Porcentaje de varianza explicada por cada componente')
+print('----------------------------------------------------')
+print(pca.explained_variance_ratio_)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
+
+# Crear una gráfica de barras para visualizar el porcentaje de varianza explicada
+ax.bar(
+    x      = np.arange(pca.n_components_) + 1,  # Número de componentes principales
+    height = pca.explained_variance_ratio_      # Porcentaje de varianza explicada por cada componente
+)
+
+# Añadir etiquetas a cada barra (el porcentaje de varianza explicada)
+for x, y in zip(np.arange(pca.n_components_) + 1, pca.explained_variance_ratio_):
+    label = round(y, 3)  # Redondear el porcentaje a 2 decimales
+    ax.annotate(
+        label,
+        (x, y),
+        textcoords="offset points",  # Alinear el texto
+        xytext=(0, 10),              # Separación en pixeles sobre la barra
+        ha='center'                  # Alinear horizontalmente en el centro de la barra
+    )
+
+# Configuración de los ejes
+ax.set_xticks(np.arange(pca.n_components_) + 1)
+ax.set_ylim(0, 1.1)  # Límite del eje Y
+ax.set_title('Porcentaje de varianza explicada por cada componente')
+ax.set_xlabel('Componente principal')
+ax.set_ylabel('Porcentaje de varianza explicada')
+
+plt.show()
+
+# Porcentaje de varianza explicada acumulada
+# ==============================================================================
+prop_varianza_acum = pca.explained_variance_ratio_.cumsum()
+print('------------------------------------------')
+print('Porcentaje de varianza explicada acumulada')
+print('------------------------------------------')
+print(prop_varianza_acum)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
+ax.plot(
+    np.arange(pca.n_components_) + 1,
+    prop_varianza_acum,
+    marker = 'o'
+)
+
+for x, y in zip(np.arange(pca.n_components_) + 1, prop_varianza_acum):
+    label = round(y, 3)
+    ax.annotate(
+        label,
+        (x, y),
+        textcoords="offset points",
+        xytext=(0, 10),
+        ha='center'
+    )
+
+ax.set_ylim(0, 1.1)
+ax.set_xticks(np.arange(pca.n_components_) + 1)
+ax.set_title('Porcentaje de varianza explicada acumulada')
+ax.set_xlabel('Componente principal')
+ax.set_ylabel('Por. varianza acumulada')
+plt.show()
+
+Se vizualiza que es necesario los 4 componentes principales a fin de obtener un porcentaje mayor al 60 porciento. Aunque si se busca un 60 con 3pc seria aceptable y si se busca un 80% con los primeros 5pc (En virtud a por lo poco que no se llega al 60 y 80 porciento neto, en ambos casos)
+
+
+
+
+
+
+
+
+
